@@ -11,3 +11,4 @@ rust_format 文件路径
 rust_format /home/user/hello.sh
 ```
 
+没有异常提示则表示格式化成功.
