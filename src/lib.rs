@@ -7,6 +7,7 @@
 // Use.
 
 pub mod shell;
+pub mod vim;
 
 // Enum.
 

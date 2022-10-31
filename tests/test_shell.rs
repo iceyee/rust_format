@@ -93,24 +93,24 @@ sed -n -e '/^rust$\\|^rust[^[:space:]]\\+/p'
 )
 for BIG_PROJECT in $BIG_PROJECTS
 do
-[ -e $HOME/git/$BIG_PROJECT/Cargo.toml ] \\
+            [       -e $HOME/git/$BIG_PROJECT/Cargo.toml ] \\
 && fetch_name $HOME/git/$BIG_PROJECT/Cargo.toml \\
 && NAMES=\"$NAMES $PROJECT_NAME\" \\
 && PATHS=\"$PATHS file://$HOME/git/$BIG_PROJECT/target/doc/$PROJECT_NAME/index.html\" \\
 && COUNTER=$(($COUNTER+1))
 DIRECTORIES=$(ls $HOME/git/$BIG_PROJECT         )
-for DIRECTORY in $DIRECTORIES
+for DIRECTORY in        $DIRECTORIES
 do
 [ -e $HOME/git/$BIG_PROJECT/$DIRECTORY/Cargo.toml           ] \\
 && fetch_name $HOME/git/$BIG_PROJECT/$DIRECTORY/Cargo.toml \\
 && NAMES=\"$NAMES $PROJECT_NAME\" \\
-&& PATHS=\"$PATHS file://$HOME/git/$BIG_PROJECT/$DIRECTORY/target/doc/$PROJECT_NAME/index.html\" \\
-&& COUNTER=$(($COUNTER+1))
+        &&           PATHS=\"$PATHS file://$HOME/git/$BIG_PROJECT/$DIRECTORY/target/doc/$PROJECT_NAME/index.html\" \\
+&& COUNTER=$((  $COUNTER+1      ) )
 done
 done
 
 a_menu          \"打开rust文档\" \"$NAMES\"
-read -p \">>> \" INDEX
+read -p         \">>> \" INDEX
 browse $(   a_array_get \"$PATHS\" \"$INDEX\"    )
 }
 
