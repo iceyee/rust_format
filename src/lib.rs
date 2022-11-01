@@ -8,6 +8,7 @@
 
 pub mod shell;
 pub mod vim;
+pub mod xml;
 
 // Enum.
 
