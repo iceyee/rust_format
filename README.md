@@ -2,16 +2,23 @@
 用Rust做的格式化工具, 支持Shell.
 
 使用方法, 
-```
+```bash
 rust_format 文件类型 文件路径
 ```
 
 比如, 我有一个Shell文件, 路径`/home/user/hello.sh`, 那么
-```
+```bash
 rust_format --shell /home/user/hello.sh
 ```
 
 没有异常提示则表示格式化成功.
+
+## 目前支持的文件类型
+- shell
+- vim
+- xml
+
+## 部分不支持的功能
 
 由于逻辑复杂, 以及不常用, 有些语法的排版是不支持的(懒得做), 包括如下:
 
@@ -22,7 +29,7 @@ execute !echo "hello world"
 
 将上面的写成
 
-```
+```vim
 execute 
     \!echo
     \"hello world"
