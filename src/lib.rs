@@ -9,6 +9,7 @@
 pub mod shell;
 pub mod vim;
 pub mod xml;
+pub mod html;
 
 // Enum.
 
