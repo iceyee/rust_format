@@ -41,13 +41,6 @@ static mut BUFFER_TYPES: [WordType; 8] = [
     WordType::Space,
     WordType::Space,
 ];
-static mut APPEND: i64 = 0;
-static mut APPEND_TRIGGER_BEFORE: fn(_: usize) = |_: usize| {};
-static mut APPEND_TRIGGER_AFTER: fn(_: usize) = |_: usize| {};
-static mut PIPE_INDENT_STACK: Vec<i64> = Vec::new();
-static mut PIPE_INDENT: i64 = 0;
-static mut PIPE_INDENT_TRIGGER_BEFORE: fn(_: usize) = |_: usize| {};
-static mut PIPE_INDENT_TRIGGER_AFTER: fn(_: usize) = |_: usize| {};
 
 // Enum.
 
@@ -56,28 +49,20 @@ static mut PIPE_INDENT_TRIGGER_AFTER: fn(_: usize) = |_: usize| {};
 enum SplitState {
     #[default]
     Neutral,
-    Comment,
-    Punctuation,
     Space,
-    String1,
-    String2,
     Word,
 }
 
-// State1=>State2,...,
-// State2=>State1,...,
-// State1=>State3,...,
-// State3=>State1,...,
+// Neutral=>State2,...,
+// State2=>Neutral,...,
+// Neutral=>State3,...,
+// State3=>Neutral,...,
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Default, PartialEq)]
 enum WordType {
-    Comment,
-    Punctuation,
     #[default]
     Space,
-    String1,
-    String2,
     Word,
 }
 
@@ -102,20 +87,20 @@ enum IsNeededSpace {
 // Struct.
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct ShellFormatter;
+pub struct Template;
 
-impl crate::Formatter for ShellFormatter {
+impl crate::Formatter for Template {
     fn format(text: &str) -> String {
         unsafe {
-            ShellFormatter::split_text(text.as_bytes());
-            ShellFormatter::debug_print();
-            ShellFormatter::rebuild_text();
+            Template::split_text(text.as_bytes());
+            Template::rebuild_text();
+            // Template::debug_print();
             return TEXT.clone();
         }
     }
 }
 
-impl ShellFormatter {
+impl Template {
     #[allow(unused_mut)]
     unsafe fn split_text(text: &[u8]) {
         let mut split_state: SplitState = SplitState::Neutral;
@@ -131,95 +116,15 @@ impl ShellFormatter {
                         word = Vec::new();
                     }
                     word.push(text[x]);
-                    if text[x] == b'#' {
-                        split_state = SplitState::Comment;
-                    } else if text[x].is_ascii_whitespace() {
-                        split_state = SplitState::Space;
-                    } else if text[x] == b'"' {
-                        split_state = SplitState::String1;
-                    } else if text[x] == b'\'' {
-                        split_state = SplitState::String2;
-                    } else if text[x].is_ascii_alphanumeric()
-                        || text[x] == b'$'
-                        || text[x] == b'-'
-                        || text[x] == b'_'
-                    {
-                        split_state = SplitState::Word;
-                    } else if text[x].is_ascii_punctuation() {
-                        split_state = SplitState::Punctuation;
-                    } else {
-                        panic!("");
-                    }
                 }
-                SplitState::Comment => {
-                    last_type = WordType::Comment;
-                    if text[x] == b'\n' {
-                        split_state = SplitState::Neutral;
-                        x -= 1;
-                    } else {
-                        word.push(text[x]);
-                    }
-                }
-                SplitState::Punctuation => {
-                    last_type = WordType::Comment;
-                    split_state = SplitState::Neutral;
-                    x -= 1;
-                }
-                SplitState::Space => {
-                    last_type = WordType::Space;
-                    if !text[x].is_ascii_whitespace() {
-                        split_state = SplitState::Neutral;
-                        x -= 1;
-                    } else {
-                        word.push(text[x]);
-                    }
-                }
-                SplitState::String1 => {
-                    last_type = WordType::String1;
-                    if text[x] == b'\\' {
-                        word.push(text[x + 0]);
-                        word.push(text[x + 1]);
-                        x += 1;
-                    } else if text[x] == b'"' {
-                        word.push(text[x]);
-                        split_state = SplitState::Neutral;
-                        x += 0;
-                    } else {
-                        word.push(text[x]);
-                    }
-                }
-                SplitState::String2 => {
-                    last_type = WordType::String2;
-                    if text[x] == b'\'' {
-                        word.push(text[x]);
-                        split_state = SplitState::Neutral;
-                        x += 0;
-                    } else {
-                        word.push(text[x]);
-                    }
-                }
-                SplitState::Word => {
-                    last_type = WordType::Word;
-                    if !text[x].is_ascii_alphanumeric()
-                        && text[x] != b'$'
-                        && text[x] != b'-'
-                        && text[x] != b'_'
-                    {
-                        split_state = SplitState::Neutral;
-                        x -= 1;
-                    } else {
-                        word.push(text[x]);
-                    }
-                }
+                SplitState::Space => last_type = WordType::Space,
+                SplitState::Word => last_type = WordType::Word,
             }
             x += 1;
         }
         if WORDS.len() != 0 {
             WORDS.push(String::from_utf8(word).unwrap());
             TYPES.push(last_type);
-        }
-        if split_state == SplitState::String1 || split_state == SplitState::String2 {
-            panic!("");
         }
         x = 0;
         let mut new_words: Vec<String> = Vec::new();
@@ -236,13 +141,6 @@ impl ShellFormatter {
                     new_words.push(" ".to_string());
                 }
                 new_types.push(WordType::Space);
-            } else if x + 1 < WORDS.len()
-                && (WORDS[x + 0] == "&" && WORDS[x + 1] == "&"
-                    || WORDS[x + 0] == "|" && WORDS[x + 1] == "|")
-            {
-                new_words.push(WORDS[x + 0].clone() + WORDS[x + 1].as_str());
-                new_types.push(WordType::Punctuation);
-                x += 1;
             } else {
                 new_words.push(WORDS[x].clone());
                 new_types.push(TYPES[x].clone());
@@ -259,10 +157,10 @@ impl ShellFormatter {
     unsafe fn rebuild_text() {
         let mut x: usize = 0;
         INDENT_TRIGGER_BEFORE = |x: usize| {
-            if false {
+            if [""].contains(&WORDS[x].as_str()) {
                 //
-            } else if BLOCK_END_FILTER(x) {
-                INDENT -= 4;
+            } else if [""].contains(&WORDS[x].as_str()) {
+                //
             } else {
                 //
             }
@@ -270,10 +168,10 @@ impl ShellFormatter {
         INDENT_TRIGGER_AFTER = |x: usize| {
             if BLOCK_BEGIN_FILTER(x) {
                 INDENT += 4;
-            } else if false {
-                //
+            } else if BLOCK_END_FILTER(x) {
+                INDENT -= 4;
             } else {
-                INDENT += 0;
+                //
             }
         };
         IS_START_TRIGGER_BEFORE = |x: usize| {
@@ -286,7 +184,7 @@ impl ShellFormatter {
             }
         };
         IS_START_TRIGGER_AFTER = |x: usize| {
-            if ["\n", "\n\n"].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 IS_START = IsStart::Yes;
             } else if [""].contains(&WORDS[x].as_str()) {
                 IS_START = IsStart::No;
@@ -295,78 +193,25 @@ impl ShellFormatter {
             }
         };
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
-            if ["|", "&&", "||"].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", ")"].contains(&WORDS[x].as_str()) {
+            } else if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
             }
         };
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
-            if [")", "|", "&&", "||"].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", "{"].contains(&WORDS[x].as_str()) {
+            } else if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
-                if WORDS[x] == " " {
-                    //
-                } else if BUFFER_TYPES[4] == WordType::Space {
-                    IS_NEEDED_SPACE = IsNeededSpace::Yes;
-                } else {
-                    IS_NEEDED_SPACE = IsNeededSpace::No;
-                }
-            }
-        };
-        APPEND_TRIGGER_BEFORE = |x: usize| {
-            if [""].contains(&WORDS[x].as_str()) {
-                //
-            } else if ["&&", "||"].contains(&WORDS[x].as_str()) {
-                APPEND = 0;
-            } else {
-                //
-            }
-        };
-        APPEND_TRIGGER_AFTER = |x: usize| {
-            if [""].contains(&WORDS[x].as_str()) {
-                APPEND = 0;
-            } else if [""].contains(&WORDS[x].as_str()) {
-                APPEND = 0;
-            } else if TYPES[x] == WordType::Space
-                && WORDS[x].contains("\n")
-                && (BUFFER_WORDS[3] == "\\" || BUFFER_WORDS[2] == "\\")
-            {
-                APPEND = 4;
-            } else {
-                APPEND = 0;
-            }
-        };
-        PIPE_INDENT_TRIGGER_BEFORE = |x: usize| {
-            if [""].contains(&WORDS[x].as_str()) {
-                //
-            } else if [""].contains(&WORDS[x].as_str()) {
-                //
-            } else {
-                //
-            }
-        };
-        PIPE_INDENT_TRIGGER_AFTER = |x: usize| {
-            if [""].contains(&WORDS[x].as_str()) {
-                //
-            } else if [""].contains(&WORDS[x].as_str()) {
-                //
-            } else if BLOCK_BEGIN_FILTER(x) {
-                INDENT += PIPE_INDENT;
-                PIPE_INDENT = 0;
-            } else if BLOCK_END_FILTER(x) {
-                PIPE_INDENT = PIPE_INDENT_STACK.pop().unwrap();
-                INDENT -= PIPE_INDENT;
-            } else {
-                //
+                IS_NEEDED_SPACE = IsNeededSpace::Yes;
             }
         };
         DONT_APPEND_FILTER = |x: usize| -> bool {
-            if [" "].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 true
             } else if [""].contains(&WORDS[x].as_str()) {
                 false
@@ -375,7 +220,7 @@ impl ShellFormatter {
             }
         };
         BLOCK_BEGIN_FILTER = |x: usize| -> bool {
-            if ["then", "else", "do", "(", "[", "{"].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 true
             } else if [""].contains(&WORDS[x].as_str()) {
                 false
@@ -384,7 +229,7 @@ impl ShellFormatter {
             }
         };
         BLOCK_END_FILTER = |x: usize| -> bool {
-            if ["elif", "else", "done", ")", "]", "}"].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 true
             } else if [""].contains(&WORDS[x].as_str()) {
                 false
@@ -392,23 +237,21 @@ impl ShellFormatter {
                 false
             }
         };
-        ShellFormatter::buffer_roll_new(WORDS[0].clone(), TYPES[0].clone());
-        ShellFormatter::buffer_roll_new(WORDS[1].clone(), TYPES[1].clone());
-        ShellFormatter::buffer_roll_new(WORDS[2].clone(), TYPES[2].clone());
-        ShellFormatter::buffer_roll_new(WORDS[3].clone(), TYPES[3].clone());
+        Template::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
+        Template::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
+        Template::buffer_roll_new(WORDS[0 + 3].clone(), TYPES[0 + 3].clone());
         while x < WORDS.len() {
             if x + 4 < WORDS.len() {
-                ShellFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
+                Template::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
             } else {
-                ShellFormatter::buffer_roll_new(String::new(), WordType::Space);
+                Template::buffer_roll_new(String::new(), WordType::Space);
             }
             INDENT_TRIGGER_BEFORE(x);
             IS_START_TRIGGER_BEFORE(x);
             IS_NEEDED_SPACE_TRIGGER_BEFORE(x);
-            APPEND_TRIGGER_BEFORE(x);
-            if IsStart::Yes == IS_START {
-                ShellFormatter::append_indent(INDENT + PIPE_INDENT + APPEND);
-            } else if IsNeededSpace::Yes == IS_NEEDED_SPACE && WORDS[x] != " " {
+            if let IsStart::Yes = IS_START {
+                Template::append_indent(INDENT);
+            } else if let IsNeededSpace::Yes = IS_NEEDED_SPACE {
                 TEXT.push(' ');
             };
             if !DONT_APPEND_FILTER(x) {
@@ -417,8 +260,7 @@ impl ShellFormatter {
             INDENT_TRIGGER_AFTER(x);
             IS_START_TRIGGER_AFTER(x);
             IS_NEEDED_SPACE_TRIGGER_AFTER(x);
-            APPEND_TRIGGER_AFTER(x);
-            ShellFormatter::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
+            Template::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
             x += 1;
         }
         TEXT = TEXT.trim().to_string();

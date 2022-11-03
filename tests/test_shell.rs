@@ -22,7 +22,7 @@ const TEXT: &str = "
 # *  Git: https://github.com/iceyee                *
 # **************************************************
 #
-[ $(whoami) != \"root\" ] && echo \"权限不够\" && exit 1
+[ $(whoami) != \"root\" ] && echo \"权限不够\"          && exit          1
 
 # 安装
 apt install rabbitmq-server -y
@@ -143,3 +143,5 @@ fn test_shell() {
     );
     return;
 }
+
+

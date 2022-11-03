@@ -6,10 +6,11 @@
 //
 // Use.
 
+pub mod html;
 pub mod shell;
+pub mod template;
 pub mod vim;
 pub mod xml;
-pub mod html;
 
 // Enum.
 

@@ -16,21 +16,21 @@
 
 const TEXT: &str = "
 
-syntax clear            \"支持语法高亮
-syntax on               \"支持语法高亮
-set autoindent          \"产生新行时, 自动缩进
-set autoread            \"自动读取, 外部文件改变时生效
-set autowrite           \"自动写入, 文件跳转时有效
-set cursorline          \"光标下划线
-set foldenable          \"允许折叠
-set nobackup            \"不备份, 写入文件时生效
-set nocompatible        \"非兼容模式, 表示正常运行
-set nopaste             \"非粘贴模式
-set ruler               \"显示坐标
-set showcmd             \"在屏幕最后一行显示command
-set showmode            \"显示当前正在使用的模式
-set smartindent         \"智能缩进
-set foldmethod=marker   \"折叠方式
+syntax clear            
+syntax on              
+set autoindent        
+set autoread         
+set autowrite       
+set cursorline     
+set foldenable    
+set nobackup            
+set nocompatible       
+set nopaste           
+set ruler            
+set showcmd         
+set showmode            
+set smartindent        
+set foldmethod=marker 
 set encoding=utf-8
 set linespace=4
 set shiftwidth=4        
@@ -273,6 +273,14 @@ normal ^
 endif
 return \"\"
 endfunction
+
+
+autocmd BufReadPost * 
+\\if 1 < line(\"'\\\"\") 
+\\       && line(\"'\\\"\") <= line(\"$\") 
+\\       && &ft !~# 'commit' |
+\\   execute \"normal! g`\\\"\" |
+\\endif
 
 \" 全局粘贴
 \" @param $1 文件名, 不带'/'就行
