@@ -107,7 +107,7 @@ pub struct ShellFormatter;
 impl crate::Formatter for ShellFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            ShellFormatter::split_text(text.as_bytes());
+            ShellFormatter::split_text(("\n".to_string() + text).as_bytes());
             ShellFormatter::debug_print();
             ShellFormatter::rebuild_text();
             return TEXT.clone();
