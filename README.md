@@ -38,7 +38,7 @@ echo "hello world" " 这里是注释
 echo "hello world"
 ```
 
-#### html, 由于用的排版规则同xml(区别是xml的缩进+4, html的缩进+2), 所有标签必须符合xml规则, 以及不支持读<script></script>中间的内容, 因为'<'和'>'这两个比较运算符, 会被解释成标签开始和标签结束.
+#### html, 因为用的排版规则同xml(区别是xml的缩进+4, html的缩进+2), 所以所有标签必须符合xml规则.
 
 ## 后记
 
