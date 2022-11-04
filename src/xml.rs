@@ -403,8 +403,10 @@ impl XmlFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if [" ", ">", "/", "?"].contains(&WORDS[x].as_str()) {
+            } else if [">", "/", "?"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
+            } else if WORDS[x] == " " {
+                //
             } else {
                 //
             }
@@ -412,8 +414,10 @@ impl XmlFormatter {
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
             if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if [" ", ">", "/", "?"].contains(&WORDS[x].as_str()) {
+            } else if [">", "/", "?"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
+            } else if WORDS[x] == " " {
+                //
             } else {
                 if x + 1 < WORDS.len() && WORDS[x + 1] == " " {
                     IS_NEEDED_SPACE = IsNeededSpace::Yes;
@@ -496,9 +500,9 @@ impl XmlFormatter {
                 TEXT.push('\n');
                 XmlFormatter::append_indent(INDENT);
             }
-            if let IsStart::Yes = IS_START {
+            if IsStart::Yes == IS_START {
                 XmlFormatter::append_indent(INDENT);
-            } else if let IsNeededSpace::Yes = IS_NEEDED_SPACE {
+            } else if IsNeededSpace::Yes == IS_NEEDED_SPACE && WORDS[x] != " " {
                 TEXT.push(' ');
             };
             if !DONT_APPEND_FILTER(x) {
@@ -557,149 +561,3 @@ impl XmlFormatter {
 }
 
 // Function.
-// // Use.
-//
-// // Enum.
-//
-// #[derive(Debug, Clone, PartialEq)]
-// enum Status {
-//     InLabel,
-//     Comment,
-//     Content,
-//     Space,
-//     String1,
-//     String2,
-//     Word,
-// }
-//
-// #[derive(Debug, Clone, PartialEq)]
-// enum Type {
-//     Comment,
-//     Content,
-//     LabelStartOpen,
-//     LabelStartClose,
-//     LabelStartDeclare,
-//     LabelEnd,
-//     Slash,
-//     Space,
-//     String1,
-//     String2,
-//     Word,
-// }
-//
-// // Trait.
-//
-// // Struct.
-//
-// pub struct XmlFormatter;
-//
-// impl crate::Formatter for XmlFormatter {
-//     fn format(text: &str) -> String {
-//         let (words, ts) = XmlFormatter::split(text.as_bytes());
-//         // println!("{:?}", words);
-//         // println!("{:?}", ts);
-//         let text = XmlFormatter::rebuild(words.as_slice(), ts.as_slice());
-//         // println!("\n\n{}", text);
-//         return text;
-//     }
-// }
-//
-// impl XmlFormatter {
-//     fn rebuild(words: &[String], ts: &[Type]) -> String {
-//         let mut text: String = String::new();
-//         let mut indent: i64 = 0;
-//         let mut buffer: (String, String, String) = (String::new(), String::new(), String::new());
-//         let mut buffer2: (Type, Type, Type) = (Type::Content, Type::Content, Type::Content);
-//         // buffer3: 上一个标签和现在这个标签, 是标签头还是标签尾.
-//         let mut buffer3: (bool, bool) = (false, false);
-//         let mut is_space: bool = false;
-//         let append_indent = |t: &mut String, i: i64| {
-//             for _ in 0..(i as usize) {
-//                 t.push(' ');
-//             }
-//         };
-//         let mut x = 0;
-//         while x < words.len() {
-//             if x + 1 < words.len() {
-//                 buffer.2 = words[x + 1].clone();
-//                 buffer2.2 = ts[x + 1].clone();
-//             } else {
-//                 buffer.2 = String::new();
-//                 buffer2.2 = Type::Content;
-//             }
-//             match ts[x] {
-//                 Type::Comment => {
-//                     text.push_str("\n");
-//                     append_indent(&mut text, indent);
-//                     text.push_str(words[x].as_str());
-//                     buffer3.0 = buffer3.1;
-//                     buffer3.1 = false;
-//                 }
-//                 Type::Content => {
-//                     text.push_str(words[x].as_str());
-//                 }
-//                 Type::LabelStartOpen => {
-//                     text.push_str("\n");
-//                     append_indent(&mut text, indent);
-//                     text.push_str(words[x].as_str());
-//                     is_space = false;
-//                     indent += 4;
-//                     buffer3.1 = true;
-//                 }
-//                 Type::LabelStartClose => {
-//                     indent -= 4;
-//                     if buffer2.1 == Type::Content || buffer3.0 {
-//                     } else {
-//                         text.push_str("\n");
-//                         append_indent(&mut text, indent);
-//                     }
-//                     text.push_str(words[x].as_str());
-//                     is_space = false;
-//                     buffer3.1 = false;
-//                 }
-//                 Type::LabelStartDeclare => {
-//                     text.push_str("\n");
-//                     append_indent(&mut text, indent);
-//                     text.push_str(words[x].as_str());
-//                     is_space = false;
-//                     buffer3.1 = false;
-//                 }
-//                 Type::LabelEnd => {
-//                     text.push_str(words[x].as_str());
-//                     is_space = false;
-//                     buffer3.0 = buffer3.1;
-//                 }
-//                 Type::Slash => {
-//                     text.push_str(words[x].as_str());
-//                     is_space = false;
-//                     indent -= 4;
-//                     buffer3.1 = false;
-//                 }
-//                 Type::Space => {
-//                     if words[x] == "\n" {
-//                         text.push_str("\n");
-//                         is_space = false;
-//                     }
-//                 }
-//                 Type::Word => {
-//                     if is_space {
-//                         text.push_str(" ");
-//                     }
-//                     text.push_str(words[x].as_str());
-//                     is_space = true;
-//                 }
-//                 Type::String1 | Type::String2 => {
-//                     panic!("");
-//                 }
-//             }
-//             buffer.0 = buffer.1;
-//             buffer.1 = words[x].clone();
-//             buffer2.0 = buffer2.1;
-//             buffer2.1 = ts[x].clone();
-//             x += 1;
-//         }
-//         return text.trim().to_string();
-//     }
-// }
-//
-// // Function.

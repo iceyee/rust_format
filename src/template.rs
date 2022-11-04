@@ -249,9 +249,9 @@ impl Template {
             INDENT_TRIGGER_BEFORE(x);
             IS_START_TRIGGER_BEFORE(x);
             IS_NEEDED_SPACE_TRIGGER_BEFORE(x);
-            if let IsStart::Yes = IS_START {
+            if IsStart::Yes == IS_START {
                 Template::append_indent(INDENT);
-            } else if let IsNeededSpace::Yes = IS_NEEDED_SPACE {
+            } else if IsNeededSpace::Yes == IS_NEEDED_SPACE {
                 TEXT.push(' ');
             };
             if !DONT_APPEND_FILTER(x) {
