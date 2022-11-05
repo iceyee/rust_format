@@ -116,8 +116,8 @@ pub struct HtmlFormatter;
 impl crate::Formatter for HtmlFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            HtmlFormatter::split_text(("\n".to_string() + text).as_bytes());
-            HtmlFormatter::debug_print();
+            HtmlFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            // HtmlFormatter::debug_print();
             HtmlFormatter::rebuild_text();
             return TEXT.clone();
         }
@@ -386,12 +386,17 @@ impl HtmlFormatter {
                     new_words.push(" ".to_string());
                 }
                 new_types.push(WordType::Space);
-            } else if TYPES[x] == WordType::Content
-                || TYPES[x] == WordType::Style
-                || TYPES[x] == WordType::Script
-            {
+            } else if TYPES[x] == WordType::Content || TYPES[x] == WordType::Style {
                 let content: String = WORDS[x].trim().to_string();
                 if 0 < content.len() {
+                    new_words.push(content);
+                    new_types.push(TYPES[x].clone());
+                }
+            } else if TYPES[x] == WordType::Script {
+                let content: String = WORDS[x].trim().to_string();
+                if 0 < content.len() {
+                    use crate::Formatter;
+                    let content: String = crate::js::JavascriptFormatter::format(content.as_str());
                     new_words.push(content);
                     new_types.push(TYPES[x].clone());
                 }

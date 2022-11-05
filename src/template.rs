@@ -92,7 +92,7 @@ pub struct Template;
 impl crate::Formatter for Template {
     fn format(text: &str) -> String {
         unsafe {
-            Template::split_text(("\n".to_string() + text).as_bytes());
+            Template::split_text(("\n".to_string() + text + "\n").as_bytes());
             Template::rebuild_text();
             // Template::debug_print();
             return TEXT.clone();

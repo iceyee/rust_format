@@ -112,8 +112,8 @@ pub struct XmlFormatter;
 impl crate::Formatter for XmlFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            XmlFormatter::split_text(("\n".to_string() + text).as_bytes());
-            XmlFormatter::debug_print();
+            XmlFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            // XmlFormatter::debug_print();
             XmlFormatter::rebuild_text();
             return TEXT.clone();
         }

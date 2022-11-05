@@ -102,8 +102,8 @@ pub struct JavascriptFormatter;
 impl crate::Formatter for JavascriptFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            JavascriptFormatter::split_text(("\n".to_string() + text).as_bytes());
-            JavascriptFormatter::debug_print();
+            JavascriptFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            // JavascriptFormatter::debug_print();
             JavascriptFormatter::rebuild_text();
             return TEXT.clone();
         }
@@ -228,11 +228,14 @@ impl JavascriptFormatter {
             }
             x += 1;
         }
-        if WORDS.len() != 0 {
+        if word.len() != 0 {
             WORDS.push(String::from_utf8(word).unwrap());
             TYPES.push(last_type);
         }
-        if split_state == SplitState::String1 || split_state == SplitState::String2 {
+        if split_state == SplitState::String1
+            || split_state == SplitState::String2
+            || split_state == SplitState::Punctuation
+        {
             panic!("");
         }
         x = 0;

@@ -102,9 +102,9 @@ pub struct VimFormatter;
 impl crate::Formatter for VimFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            VimFormatter::split_text(("\n".to_string() + text).as_bytes());
+            VimFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            // VimFormatter::debug_print();
             VimFormatter::rebuild_text();
-            VimFormatter::debug_print();
             return TEXT.clone();
         }
     }
