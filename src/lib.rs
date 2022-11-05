@@ -7,6 +7,7 @@
 // Use.
 
 pub mod html;
+pub mod js;
 pub mod shell;
 pub mod template;
 pub mod vim;
