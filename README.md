@@ -7,7 +7,7 @@
 rust_format 文件类型 文件路径
 ```
 
-比如, 我有一个Shell文件, 路径是`/home/user/hello.sh`, 那么执行命令
+比如, 我有一个shell文件, 路径是`/home/user/hello.sh`, 那么执行命令
 ```bash
 rust_format --shell /home/user/hello.sh
 ```
@@ -17,6 +17,7 @@ rust_format --shell /home/user/hello.sh
 ## 目前支持的文件类型
 
 - html
+- javascript
 - shell
 - vim
 - xml
