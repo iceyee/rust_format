@@ -7,6 +7,7 @@
 // Use.
 
 pub mod html;
+pub mod java;
 pub mod js;
 pub mod shell;
 pub mod template;

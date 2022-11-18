@@ -41,6 +41,9 @@ static mut BUFFER_TYPES: [WordType; 8] = [
     WordType::Space,
     WordType::Space,
 ];
+static mut APPEND: i64 = 0;
+static mut APPEND_TRIGGER_BEFORE: fn(_: usize) = |_: usize| {};
+static mut APPEND_TRIGGER_AFTER: fn(_: usize) = |_: usize| {};
 
 // Enum.
 
@@ -49,30 +52,32 @@ static mut BUFFER_TYPES: [WordType; 8] = [
 enum SplitState {
     #[default]
     Neutral,
-    Comment,
+    Anotation,
+    Comment1,
+    Comment2,
+    Import,
     Punctuation,
-    RegularExpression,
     Space,
     String1,
     String2,
     Word,
 }
 
-// State1=>State2,...,
-// State2=>State1,...,
-// State1=>State3,...,
-// State3=>State1,...,
+// Neutral=>State2,...,
+// State2=>Neutral,...,
+// Neutral=>State3,...,
+// State3=>Neutral,...,
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Default, PartialEq)]
 enum WordType {
+    Anotation,
     Comment,
+    Import,
     Punctuation,
-    RegularExpression,
     #[default]
     Space,
-    String1,
-    String2,
+    StringA,
     Word,
 }
 
@@ -97,20 +102,20 @@ enum IsNeededSpace {
 // Struct.
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct JavascriptFormatter;
+pub struct JavaFormatter;
 
-impl crate::Formatter for JavascriptFormatter {
+impl crate::Formatter for JavaFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            JavascriptFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
-            // JavascriptFormatter::debug_print();
-            JavascriptFormatter::rebuild_text();
+            JavaFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            JavaFormatter::rebuild_text();
+            JavaFormatter::debug_print();
             return TEXT.clone();
         }
     }
 }
 
-impl JavascriptFormatter {
+impl JavaFormatter {
     #[allow(unused_mut)]
     unsafe fn split_text(text: &[u8]) {
         let mut split_state: SplitState = SplitState::Neutral;
@@ -127,16 +132,33 @@ impl JavascriptFormatter {
                     }
                     word.push(text[x]);
                     if false {
+                    } else if text[x] == b'@' {
+                        split_state = SplitState::Anotation;
                     } else if text[x] == b'/' && x + 1 < text.len() && text[x + 1] == b'/' {
-                        split_state = SplitState::Comment;
-                    } else if text[x] == b'/'
-                        && (TYPES.len() == 0
-                            || TYPES[TYPES.len() - 1] == WordType::Punctuation
-                            || TYPES.len() == 1
-                            || TYPES[TYPES.len() - 2] == WordType::Punctuation
-                                && TYPES[TYPES.len() - 1] == WordType::Space)
+                        split_state = SplitState::Comment1;
+                    } else if text[x] == b'/' && x + 1 < text.len() && text[x + 1] == b'*' {
+                        word.push(text[x + 1]);
+                        split_state = SplitState::Comment2;
+                        x += 1;
+                    } else if x + 5 < text.len()
+                        && text[x + 0] == b'i'
+                        && text[x + 1] == b'm'
+                        && text[x + 2] == b'p'
+                        && text[x + 3] == b'o'
+                        && text[x + 4] == b'r'
+                        && text[x + 5] == b't'
                     {
-                        split_state = SplitState::RegularExpression;
+                        split_state = SplitState::Import;
+                    } else if x + 6 < text.len()
+                        && text[x + 0] == b'p'
+                        && text[x + 1] == b'a'
+                        && text[x + 2] == b'c'
+                        && text[x + 3] == b'k'
+                        && text[x + 4] == b'a'
+                        && text[x + 5] == b'g'
+                        && text[x + 6] == b'e'
+                    {
+                        split_state = SplitState::Import;
                     } else if text[x].is_ascii_whitespace() {
                         split_state = SplitState::Space;
                     } else if text[x] == b'"' {
@@ -152,7 +174,47 @@ impl JavascriptFormatter {
                         panic!("");
                     }
                 }
-                SplitState::Comment => {
+                SplitState::Anotation => {
+                    last_type = WordType::Anotation;
+                    let mut deep: i64 = 0;
+                    let mut y: usize = 0;
+                    let mut is_string1: bool = false;
+                    let mut is_string2: bool = false;
+                    loop {
+                        if text[x + y].is_ascii_whitespace()
+                            && deep == 0
+                            && !is_string1
+                            && !is_string2
+                        {
+                            break;
+                        } else if text[x + y] == b'\\' && (is_string1 || is_string2) {
+                            word.push(text[x + y + 0]);
+                            word.push(text[x + y + 1]);
+                            y += 1;
+                        } else if text[x + y] == b'"' {
+                            word.push(text[x + y]);
+                            is_string1 = !is_string1;
+                        } else if text[x + y] == b'\'' {
+                            word.push(text[x + y]);
+                            is_string2 = !is_string1;
+                        } else if is_string1 || is_string2 {
+                            word.push(text[x + y]);
+                        } else if text[x + y] == b'(' || text[x + y] == b'{' {
+                            word.push(text[x + y]);
+                            deep += 1;
+                        } else if text[x + y] == b')' || text[x + y] == b'}' {
+                            word.push(text[x + y]);
+                            deep -= 1;
+                        } else {
+                            word.push(text[x + y]);
+                        }
+                        y += 1;
+                    }
+                    split_state = SplitState::Neutral;
+                    x += y;
+                    x -= 1;
+                }
+                SplitState::Comment1 => {
                     last_type = WordType::Comment;
                     if text[x] == b'\n' {
                         split_state = SplitState::Neutral;
@@ -161,23 +223,28 @@ impl JavascriptFormatter {
                         word.push(text[x]);
                     }
                 }
+                SplitState::Comment2 => {
+                    last_type = WordType::Comment;
+                    if x + 1 < text.len() && text[x + 0] == b'*' && text[x + 1] == b'/' {
+                        word.push(text[x + 0]);
+                        word.push(text[x + 1]);
+                        split_state = SplitState::Neutral;
+                        x += 1;
+                    } else {
+                        word.push(text[x]);
+                    }
+                }
+                SplitState::Import => {
+                    last_type = WordType::Import;
+                    if text[x] == b';' {
+                        split_state = SplitState::Neutral;
+                    }
+                    word.push(text[x]);
+                }
                 SplitState::Punctuation => {
                     last_type = WordType::Punctuation;
                     split_state = SplitState::Neutral;
                     x -= 1;
-                }
-                SplitState::RegularExpression => {
-                    last_type = WordType::RegularExpression;
-                    if text[x] == b'\\' {
-                        word.push(text[x + 0]);
-                        word.push(text[x + 1]);
-                        x += 1;
-                    } else if text[x] == b'/' {
-                        word.push(text[x]);
-                        split_state = SplitState::Neutral;
-                    } else {
-                        word.push(text[x]);
-                    }
                 }
                 SplitState::Space => {
                     last_type = WordType::Space;
@@ -189,7 +256,7 @@ impl JavascriptFormatter {
                     }
                 }
                 SplitState::String1 => {
-                    last_type = WordType::String1;
+                    last_type = WordType::StringA;
                     if text[x] == b'\\' {
                         word.push(text[x + 0]);
                         word.push(text[x + 1]);
@@ -203,7 +270,7 @@ impl JavascriptFormatter {
                     }
                 }
                 SplitState::String2 => {
-                    last_type = WordType::String2;
+                    last_type = WordType::StringA;
                     if text[x] == b'\\' {
                         word.push(text[x + 0]);
                         word.push(text[x + 1]);
@@ -218,11 +285,7 @@ impl JavascriptFormatter {
                 }
                 SplitState::Word => {
                     last_type = WordType::Word;
-                    if !text[x].is_ascii_alphanumeric()
-                        && text[x] != b'$'
-                        && text[x] != b'-'
-                        && text[x] != b'_'
-                    {
+                    if !text[x].is_ascii_alphanumeric() && text[x] != b'$' && text[x] != b'_' {
                         split_state = SplitState::Neutral;
                         x -= 1;
                     } else {
@@ -232,15 +295,9 @@ impl JavascriptFormatter {
             }
             x += 1;
         }
-        if word.len() != 0 {
+        if WORDS.len() != 0 {
             WORDS.push(String::from_utf8(word).unwrap());
             TYPES.push(last_type);
-        }
-        if split_state == SplitState::String1
-            || split_state == SplitState::String2
-            || split_state == SplitState::Punctuation
-        {
-            panic!("");
         }
         x = 0;
         let mut new_words: Vec<String> = Vec::new();
@@ -254,7 +311,18 @@ impl JavascriptFormatter {
                         new_words.push("\n\n".to_string());
                     }
                     new_types.push(WordType::Space);
+                } else {
+                    // new_words.push(" ".to_string());
+                    // new_types.push(WordType::Space);
                 }
+            } else if x + 2 < WORDS.len()
+                && (WORDS[x + 0] == ">" && WORDS[x + 1] == ">" && WORDS[x + 2] == "="
+                    || WORDS[x + 0] == "<" && WORDS[x + 1] == "<" && WORDS[x + 2] == "="
+                    || WORDS[x + 0] == "." && WORDS[x + 1] == "." && WORDS[x + 2] == ".")
+            {
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 1] + &WORDS[x + 2]);
+                new_types.push(WordType::Punctuation);
+                x += 2;
             } else if x + 1 < WORDS.len()
                 && (WORDS[x + 0] == "&" && WORDS[x + 1] == "&"
                     || WORDS[x + 0] == "|" && WORDS[x + 1] == "|"
@@ -271,10 +339,11 @@ impl JavascriptFormatter {
                     || WORDS[x + 0] == "+" && WORDS[x + 1] == "+"
                     || WORDS[x + 0] == "-" && WORDS[x + 1] == "-"
                     || WORDS[x + 0] == "-" && WORDS[x + 1] == ">"
+                    || WORDS[x + 0] == "<" && WORDS[x + 1] == ">"
                     || WORDS[x + 0] == "<" && WORDS[x + 1] == "<"
                     || WORDS[x + 0] == ">" && WORDS[x + 1] == ">")
             {
-                new_words.push(WORDS[x + 0].clone() + WORDS[x + 1].as_str());
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 1]);
                 new_types.push(WordType::Punctuation);
                 x += 1;
             } else {
@@ -293,7 +362,9 @@ impl JavascriptFormatter {
     unsafe fn rebuild_text() {
         let mut x: usize = 0;
         INDENT_TRIGGER_BEFORE = |x: usize| {
-            if false {
+            if [""].contains(&WORDS[x].as_str()) {
+                //
+            } else if [""].contains(&WORDS[x].as_str()) {
                 //
             } else if BLOCK_END_FILTER(x) {
                 INDENT -= 4;
@@ -304,10 +375,10 @@ impl JavascriptFormatter {
         INDENT_TRIGGER_AFTER = |x: usize| {
             if BLOCK_BEGIN_FILTER(x) {
                 INDENT += 4;
-            } else if false {
-                //
+            } else if BLOCK_END_FILTER(x) {
+                // INDENT -= 4;
             } else {
-                INDENT += 0;
+                //
             }
         };
         IS_START_TRIGGER_BEFORE = |x: usize| {
@@ -329,27 +400,57 @@ impl JavascriptFormatter {
             }
         };
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
-            if ["|", "&&", "||"].contains(&WORDS[x].as_str()) {
+            if ["{"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", ")", ".", ";"].contains(&WORDS[x].as_str()) {
+            } else if [".", ")", "[", "]", "}", ";", "...", "++", "--", "<>", ","]
+                .contains(&WORDS[x].as_str())
+            {
+                IS_NEEDED_SPACE = IsNeededSpace::No;
+            } else if WORDS[x] == "(" && BUFFER_TYPES[3] == WordType::Word {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
             }
         };
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
-            if [")", "|", "&&", "||", ";"].contains(&WORDS[x].as_str()) {
+            if [")", "]", "}", ";", "...", "++", "--", "<>", ","].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", "{", "."].contains(&WORDS[x].as_str()) {
-                IS_NEEDED_SPACE = IsNeededSpace::No;
-            } else if TYPES[x] == WordType::RegularExpression {
+            } else if [".", "(", "[", "{", "!"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
             }
         };
+        APPEND_TRIGGER_BEFORE = |x: usize| {
+            if [""].contains(&WORDS[x].as_str()) {
+                //
+            } else if [""].contains(&WORDS[x].as_str()) {
+                //
+            } else {
+                //
+            }
+        };
+        APPEND_TRIGGER_AFTER = |x: usize| {
+            if [""].contains(&WORDS[x].as_str()) {
+                //
+            } else if ["\n", "\n\n"].contains(&WORDS[x].as_str()) {
+                //
+            } else if false
+                || WORDS[x] == ";"
+                || WORDS[x] == ":"
+                || WORDS[x] == "{"
+                || WORDS[x] == "}"
+                || TYPES[x] == WordType::Anotation
+                || TYPES[x] == WordType::Comment
+                || TYPES[x] == WordType::Import
+            {
+                APPEND = 0;
+            } else {
+                APPEND = 4;
+            }
+        };
         DONT_APPEND_FILTER = |x: usize| -> bool {
-            if [" "].contains(&WORDS[x].as_str()) {
+            if [""].contains(&WORDS[x].as_str()) {
                 true
             } else if [""].contains(&WORDS[x].as_str()) {
                 false
@@ -358,39 +459,39 @@ impl JavascriptFormatter {
             }
         };
         BLOCK_BEGIN_FILTER = |x: usize| -> bool {
-            if ["then", "else", "do", "(", "[", "{"].contains(&WORDS[x].as_str()) {
+            if ["(", "{"].contains(&WORDS[x].as_str()) {
                 true
-            } else if [""].contains(&WORDS[x].as_str()) {
+            } else if [")", "}"].contains(&WORDS[x].as_str()) {
                 false
             } else {
                 false
             }
         };
         BLOCK_END_FILTER = |x: usize| -> bool {
-            if ["elif", "else", "done", ")", "]", "}"].contains(&WORDS[x].as_str()) {
+            if [")", "}"].contains(&WORDS[x].as_str()) {
                 true
-            } else if [""].contains(&WORDS[x].as_str()) {
+            } else if ["(", "{"].contains(&WORDS[x].as_str()) {
                 false
             } else {
                 false
             }
         };
-        JavascriptFormatter::buffer_roll_new(WORDS[0].clone(), TYPES[0].clone());
-        JavascriptFormatter::buffer_roll_new(WORDS[1].clone(), TYPES[1].clone());
-        JavascriptFormatter::buffer_roll_new(WORDS[2].clone(), TYPES[2].clone());
-        JavascriptFormatter::buffer_roll_new(WORDS[3].clone(), TYPES[3].clone());
+        JavaFormatter::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
+        JavaFormatter::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
+        JavaFormatter::buffer_roll_new(WORDS[0 + 3].clone(), TYPES[0 + 3].clone());
         while x < WORDS.len() {
             if x + 4 < WORDS.len() {
-                JavascriptFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
+                JavaFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
             } else {
-                JavascriptFormatter::buffer_roll_new(String::new(), WordType::Space);
+                JavaFormatter::buffer_roll_new(String::new(), WordType::Space);
             }
             INDENT_TRIGGER_BEFORE(x);
             IS_START_TRIGGER_BEFORE(x);
             IS_NEEDED_SPACE_TRIGGER_BEFORE(x);
+            APPEND_TRIGGER_BEFORE(x);
             if IsStart::Yes == IS_START {
-                JavascriptFormatter::append_indent(INDENT);
-            } else if IsNeededSpace::Yes == IS_NEEDED_SPACE && WORDS[x] != " " {
+                JavaFormatter::append_indent(INDENT + APPEND);
+            } else if IsNeededSpace::Yes == IS_NEEDED_SPACE {
                 TEXT.push(' ');
             };
             if !DONT_APPEND_FILTER(x) {
@@ -399,7 +500,8 @@ impl JavascriptFormatter {
             INDENT_TRIGGER_AFTER(x);
             IS_START_TRIGGER_AFTER(x);
             IS_NEEDED_SPACE_TRIGGER_AFTER(x);
-            JavascriptFormatter::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
+            APPEND_TRIGGER_AFTER(x);
+            JavaFormatter::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
             x += 1;
         }
         TEXT = TEXT.trim().to_string();

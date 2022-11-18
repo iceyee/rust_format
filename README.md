@@ -17,6 +17,7 @@ rust_format --shell /home/user/hello.sh
 ## 目前支持的文件类型
 
 - html
+- java
 - javascript
 - shell
 - vim
