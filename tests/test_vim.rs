@@ -331,6 +331,13 @@ endfunction
 
     normal mg  
 
+try
+normal `gzz^
+catch
+123
+123
+endtry
+
 ";
 
 #[test]

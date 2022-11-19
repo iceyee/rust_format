@@ -406,7 +406,10 @@ impl JavaFormatter {
                 .contains(&WORDS[x].as_str())
             {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
-            } else if WORDS[x] == "(" && BUFFER_TYPES[3] == WordType::Word {
+            } else if WORDS[x] == "("
+                && BUFFER_TYPES[3] == WordType::Word
+                && BUFFER_WORDS[3] != "return"
+            {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
