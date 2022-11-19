@@ -293,6 +293,40 @@ call append(line(\".\"), l:content)
 return \"\"
 endfunction
 
+
+function! RunOrBrowse()
+write
+normal mg
+call GlobalFindArguments(\"//\")
+call GlobalFindFlags(\"//\")
+if searchpos('package *\\(\\S\\+\\);')[0] == 0
+let l:package = \"\"
+else
+let l:package = matchlist(
+\\getline(\".\"),
+\\'package *\\(\\S\\+\\);')[1]
+let l:package = l:package.\".\"
+endif
+let l:command = '
+\\!javac %s %s -Xlint:unchecked -d /tmp/$USER
+\\&& cd /tmp/$USER
+\\&& %s
+\\&& java %s%s %s
+\\'
+let l:command =
+\\printf(
+\\l:command,
+\\expand(\"%:p\"),
+\\b:flags,
+\\GlobalGreenPrintCommand(\"java\"),
+\\l:package,
+\\expand(\"%:t:r\"),
+\\b:arguments)
+execute l:command
+normal `gzz
+return \"\"
+endfunction
+
 ";
 
 #[test]
