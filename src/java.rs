@@ -205,6 +205,10 @@ impl JavaFormatter {
                         } else if text[x + y] == b')' || text[x + y] == b'}' {
                             word.push(text[x + y]);
                             deep -= 1;
+                            if text[x + y] == b')' && deep == 0 {
+                                y += 1;
+                                break;
+                            }
                         } else {
                             word.push(text[x + y]);
                         }
@@ -315,6 +319,60 @@ impl JavaFormatter {
                     // new_words.push(" ".to_string());
                     // new_types.push(WordType::Space);
                 }
+            } else if x + 7 < WORDS.len()
+                && WORDS[x + 0] == "<"
+                && TYPES[x + 1] == WordType::Space
+                && TYPES[x + 2] == WordType::Word
+                && WORDS[x + 3] == ","
+                && TYPES[x + 4] == WordType::Space
+                && TYPES[x + 5] == WordType::Word
+                && TYPES[x + 6] == WordType::Space
+                && WORDS[x + 7] == ">"
+            {
+                new_words.push(
+                    WORDS[x + 0].clone()
+                        + &WORDS[x + 2]
+                        + &WORDS[x + 3]
+                        + &WORDS[x + 5]
+                        + &WORDS[x + 7],
+                );
+                new_types.push(WordType::Word);
+                x += 7;
+            } else if x + 4 < WORDS.len()
+                && WORDS[x + 0] == "<"
+                && TYPES[x + 1] == WordType::Word
+                && WORDS[x + 2] == ","
+                && TYPES[x + 3] == WordType::Word
+                && WORDS[x + 4] == ">"
+            {
+                new_words.push(
+                    WORDS[x + 0].clone()
+                        + &WORDS[x + 1]
+                        + &WORDS[x + 2]
+                        + &WORDS[x + 3]
+                        + &WORDS[x + 4],
+                );
+                new_types.push(WordType::Word);
+                x += 4;
+            } else if x + 4 < WORDS.len()
+                && WORDS[x + 0] == "<"
+                && TYPES[x + 1] == WordType::Space
+                && (TYPES[x + 2] == WordType::Word || TYPES[x + 2] == WordType::Punctuation)
+                && TYPES[x + 3] == WordType::Space
+                && WORDS[x + 4] == ">"
+            {
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 2] + &WORDS[x + 4]);
+                new_types.push(WordType::Word);
+                x += 4;
+            } else if x + 2 < WORDS.len()
+                && (WORDS[x + 0] == "<" && TYPES[x + 1] == WordType::Word && WORDS[x + 2] == ">"
+                    || WORDS[x + 0] == "<"
+                        && TYPES[x + 1] == WordType::Punctuation
+                        && WORDS[x + 2] == ">")
+            {
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 1] + &WORDS[x + 2]);
+                new_types.push(WordType::Word);
+                x += 2;
             } else if x + 2 < WORDS.len()
                 && (WORDS[x + 0] == ">" && WORDS[x + 1] == ">" && WORDS[x + 2] == "="
                     || WORDS[x + 0] == "<" && WORDS[x + 1] == "<" && WORDS[x + 2] == "="
@@ -411,6 +469,8 @@ impl JavaFormatter {
                 && BUFFER_WORDS[3] != "return"
             {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
+            } else if WORDS[x].starts_with("<") && TYPES[x] == WordType::Word {
+                IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
             }
@@ -481,7 +541,11 @@ impl JavaFormatter {
         };
         JavaFormatter::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
         JavaFormatter::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
-        JavaFormatter::buffer_roll_new(WORDS[0 + 3].clone(), TYPES[0 + 3].clone());
+        if x + 3 < WORDS.len() {
+            JavaFormatter::buffer_roll_new(WORDS[x + 3].clone(), TYPES[x + 3].clone());
+        } else {
+            JavaFormatter::buffer_roll_new(String::new(), WordType::Space);
+        }
         while x < WORDS.len() {
             if x + 4 < WORDS.len() {
                 JavaFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());

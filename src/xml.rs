@@ -467,8 +467,10 @@ impl XmlFormatter {
                 IS_LABEL_START_OPEN = true;
             } else if [""].contains(&WORDS[x].as_str()) {
                 IS_LABEL_START_OPEN = false;
-            } else if TYPES[x] != WordType::Content && WORDS[x].starts_with("<") {
-                if WORDS[x].starts_with("</") {
+            } else if WORDS[x].starts_with("<") {
+                if TYPES[x] == WordType::Comment {
+                    IS_LABEL_START_OPEN = false;
+                } else if WORDS[x].starts_with("</") {
                     IS_LABEL_START_OPEN = false;
                 } else {
                     IS_LABEL_START_OPEN = true;

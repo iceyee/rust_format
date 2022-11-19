@@ -370,7 +370,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 // TODO
-@ComponentScan(basePackageClasses={ 
+@ComponentScan(basePackageClasses={
     iceyee.DependencyConfiguration.class,
     iceyee.buff.DependencyConfiguration.class
 })
@@ -415,11 +415,20 @@ defaullt:
 xxx;
 }
 
+
+@Autowired @Qualifier(\"queueAnalysis\") public BlockingQueue < Product > queueAnalysis;
+@Autowired @Qualifier(\"queueAnalysis\") public BlockingQueue < ? > queueAnalysis;
+@Autowired @Qualifier(\"queueAnalysis\") public BlockingQueue < A, B > queueAnalysis;
+@Autowired @Qualifier(\"queueAnalysis\") public BlockingQueue <A,B> queueAnalysis;
+
+boolean a = 1 < 2;
+@Autowired @Value(\"${iceyee.schedule.thread_number:3}\")public int threadNumber; 
 ";
 
 #[test]
 fn test_java() {
     use rust_format::Formatter;
+    println!("");
     println!(
         "原文:\n{}\n\n==================================================",
         TEXT
@@ -430,5 +439,3 @@ fn test_java() {
     );
     return;
 }
-
-
