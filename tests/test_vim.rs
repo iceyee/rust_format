@@ -327,6 +327,10 @@ normal `gzz
 return \"\"
 endfunction
 
+    let l:class = expand (\"%:t:r\")
+
+    normal mg  
+
 ";
 
 #[test]
@@ -342,4 +346,3 @@ fn test_vim() {
     );
     return;
 }
-

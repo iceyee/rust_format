@@ -106,8 +106,8 @@ impl crate::Formatter for VimFormatter {
     fn format(text: &str) -> String {
         unsafe {
             VimFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
-            // VimFormatter::debug_print();
             VimFormatter::rebuild_text();
+            // VimFormatter::debug_print();
             return TEXT.clone();
         }
     }
@@ -155,8 +155,8 @@ impl VimFormatter {
                                 break;
                             } else {
                                 word.push(text[x]);
+                                x += 1;
                             }
-                            x += 1;
                         }
                         read_continue = false;
                         let mut y: usize = 0;
@@ -383,7 +383,7 @@ impl VimFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if [""].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if [".", ",", "(", ")", "]", "\\"].contains(&WORDS[x].as_str()) {
+            } else if ["\n", "\n\n", ".", ",", "(", ")", "]", "\\"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else if WORDS[x] == "[" {
                 if BUFFER_WORDS[3].ends_with("=")
@@ -478,7 +478,11 @@ impl VimFormatter {
         };
         VimFormatter::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
         VimFormatter::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
-        VimFormatter::buffer_roll_new(WORDS[0 + 3].clone(), TYPES[0 + 3].clone());
+        if x + 3 < WORDS.len() {
+            VimFormatter::buffer_roll_new(WORDS[x + 3].clone(), TYPES[x + 3].clone());
+        } else {
+            VimFormatter::buffer_roll_new(String::new(), WordType::Space);
+        }
         while x < WORDS.len() {
             if x + 4 < WORDS.len() {
                 VimFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());

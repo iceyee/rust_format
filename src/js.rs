@@ -331,7 +331,7 @@ impl JavascriptFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if ["|", "&&", "||"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", ")", ".", ";"].contains(&WORDS[x].as_str()) {
+            } else if ["\n", "\n\n", "(", ")", ".", ";"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //

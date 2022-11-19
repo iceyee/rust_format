@@ -415,7 +415,7 @@ impl JavaFormatter {
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
             if [")", "]", "}", ";", "...", "++", "--", "<>", ","].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if [".", "(", "[", "{", "!"].contains(&WORDS[x].as_str()) {
+            } else if ["\n", "\n\n", ".", "(", "[", "{", "!"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
