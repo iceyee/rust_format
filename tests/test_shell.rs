@@ -127,6 +127,13 @@ source http_proxy_config.sh
 &&              rm shadowsocks-v1.14.3.x86_64-unknown-linux-gnu.tar
 
 
+if [ ! -d /home/ljq ]; then
+echo \"添加账号ljq:870\"
+useradd ljq
+echo -e \"870\\n870\" | passwd ljq
+mkdir /home/ljq
+chown ljq:ljq /home/ljq
+fi
 
 ";
 

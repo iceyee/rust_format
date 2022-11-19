@@ -108,8 +108,8 @@ impl crate::Formatter for ShellFormatter {
     fn format(text: &str) -> String {
         unsafe {
             ShellFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
-            // ShellFormatter::debug_print();
             ShellFormatter::rebuild_text();
+            // ShellFormatter::debug_print();
             return TEXT.clone();
         }
     }
@@ -297,7 +297,7 @@ impl ShellFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if ["|", "&&", "||"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", ")"].contains(&WORDS[x].as_str()) {
+            } else if ["\n", "\n\n", "(", ")"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
@@ -384,7 +384,7 @@ impl ShellFormatter {
             }
         };
         BLOCK_END_FILTER = |x: usize| -> bool {
-            if ["elif", "else", "done", ")", "]", "}"].contains(&WORDS[x].as_str()) {
+            if ["elif", "else", "fi", "done", ")", "]", "}"].contains(&WORDS[x].as_str()) {
                 true
             } else if [""].contains(&WORDS[x].as_str()) {
                 false
