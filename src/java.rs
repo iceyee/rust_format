@@ -60,6 +60,7 @@ enum SplitState {
     Space,
     String1,
     String2,
+    String3,
     Word,
 }
 
@@ -162,7 +163,18 @@ impl JavaFormatter {
                     } else if text[x].is_ascii_whitespace() {
                         split_state = SplitState::Space;
                     } else if text[x] == b'"' {
-                        split_state = SplitState::String1;
+                        if x + 2 < text.len()
+                            && text[x + 0] == b'"'
+                            && text[x + 1] == b'"'
+                            && text[x + 2] == b'"'
+                        {
+                            word.push(text[x + 1]);
+                            word.push(text[x + 2]);
+                            split_state = SplitState::String3;
+                            x += 2;
+                        } else {
+                            split_state = SplitState::String1;
+                        }
                     } else if text[x] == b'\'' {
                         split_state = SplitState::String2;
                     } else if text[x].is_ascii_alphanumeric() || text[x] == b'$' || text[x] == b'_'
@@ -287,6 +299,26 @@ impl JavaFormatter {
                         word.push(text[x]);
                     }
                 }
+                SplitState::String3 => {
+                    last_type = WordType::StringA;
+                    if text[x] == b'\\' {
+                        word.push(text[x + 0]);
+                        word.push(text[x + 1]);
+                        x += 1;
+                    } else if x + 2 < text.len()
+                        && text[x + 0] == b'"'
+                        && text[x + 1] == b'"'
+                        && text[x + 2] == b'"'
+                    {
+                        word.push(text[x + 0]);
+                        word.push(text[x + 1]);
+                        word.push(text[x + 2]);
+                        split_state = SplitState::Neutral;
+                        x += 2;
+                    } else {
+                        word.push(text[x]);
+                    }
+                }
                 SplitState::Word => {
                     last_type = WordType::Word;
                     if !text[x].is_ascii_alphanumeric() && text[x] != b'$' && text[x] != b'_' {
@@ -384,6 +416,7 @@ impl JavaFormatter {
             } else if x + 1 < WORDS.len()
                 && (WORDS[x + 0] == "&" && WORDS[x + 1] == "&"
                     || WORDS[x + 0] == "|" && WORDS[x + 1] == "|"
+                    || WORDS[x + 0] == ":" && WORDS[x + 1] == ":"
                     || WORDS[x + 0] == "+" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "-" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "*" && WORDS[x + 1] == "="
@@ -460,8 +493,10 @@ impl JavaFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if ["{"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if [".", ")", "[", "]", "}", ";", "...", "++", "--", "<>", ","]
-                .contains(&WORDS[x].as_str())
+            } else if [
+                "\n", "\n\n", "::", ".", ")", "[", "]", "}", ";", "...", "++", "--", "<>", ",",
+            ]
+            .contains(&WORDS[x].as_str())
             {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else if WORDS[x] == "("
@@ -478,7 +513,7 @@ impl JavaFormatter {
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
             if [")", "]", "}", ";", "...", "++", "--", "<>", ","].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["\n", "\n\n", ".", "(", "[", "{", "!"].contains(&WORDS[x].as_str()) {
+            } else if ["\n", "\n\n", "::", ".", "(", "[", "{", "!"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
@@ -487,8 +522,8 @@ impl JavaFormatter {
         APPEND_TRIGGER_BEFORE = |x: usize| {
             if [""].contains(&WORDS[x].as_str()) {
                 //
-            } else if [""].contains(&WORDS[x].as_str()) {
-                //
+            } else if ["case"].contains(&WORDS[x].as_str()) {
+                APPEND = -4;
             } else {
                 //
             }
