@@ -60,9 +60,9 @@ return result;
 
 var a = /hello world\\//g;
 
-var b = a/2;
-var c = a;//2;
-
+var now = new Date().getTime() /            1000;
+var b=a/2;
+var c=a;//2;
 ";
 
 #[test]

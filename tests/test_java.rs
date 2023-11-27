@@ -411,7 +411,7 @@ case 2:
 xxx;
 xxx;
 break;
-defaullt:
+default:
 xxx;
 }
 
@@ -431,6 +431,18 @@ private final AtomicLong counter = new AtomicLong();
 
 @GetMapping(\"/greeting\")
 public Greeting greeting(@RequestParam(value = \"name\", defaultValue = \"World\") String name) {
+switch(A){
+case 1:
+xxx;
+xxx;
+break;
+case 2:
+xxx;
+xxx;
+break;
+default:
+xxx;
+}
 return new Greeting(counter.incrementAndGet(), String.format(template, name));
 }
 }

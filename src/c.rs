@@ -52,10 +52,9 @@ static mut APPEND_TRIGGER_AFTER: fn(_: usize) = |_: usize| {};
 enum SplitState {
     #[default]
     Neutral,
-    Anotation,
+    Macro,
     Comment1,
     Comment2,
-    Import,
     Punctuation,
     Space,
     String1,
@@ -72,9 +71,8 @@ enum SplitState {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Default, PartialEq)]
 enum WordType {
-    Anotation,
+    Macro,
     Comment,
-    Import,
     Punctuation,
     #[default]
     Space,
@@ -103,20 +101,20 @@ enum IsNeededSpace {
 // Struct.
 
 #[derive(Debug, Clone, Default, PartialEq)]
-pub struct JavaFormatter;
+pub struct CFormatter;
 
-impl crate::Formatter for JavaFormatter {
+impl crate::Formatter for CFormatter {
     fn format(text: &str) -> String {
         unsafe {
-            JavaFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
-            JavaFormatter::rebuild_text();
-            JavaFormatter::debug_print();
+            CFormatter::split_text(("\n".to_string() + text + "\n").as_bytes());
+            CFormatter::rebuild_text();
+            CFormatter::debug_print();
             return TEXT.clone();
         }
     }
 }
 
-impl JavaFormatter {
+impl CFormatter {
     #[allow(unused_mut)]
     unsafe fn split_text(text: &[u8]) {
         let mut split_state: SplitState = SplitState::Neutral;
@@ -133,33 +131,14 @@ impl JavaFormatter {
                     }
                     word.push(text[x]);
                     if false {
-                    } else if text[x] == b'@' {
-                        split_state = SplitState::Anotation;
+                    } else if text[x] == b'#' {
+                        split_state = SplitState::Macro;
                     } else if text[x] == b'/' && x + 1 < text.len() && text[x + 1] == b'/' {
                         split_state = SplitState::Comment1;
                     } else if text[x] == b'/' && x + 1 < text.len() && text[x + 1] == b'*' {
                         word.push(text[x + 1]);
                         split_state = SplitState::Comment2;
                         x += 1;
-                    } else if x + 5 < text.len()
-                        && text[x + 0] == b'i'
-                        && text[x + 1] == b'm'
-                        && text[x + 2] == b'p'
-                        && text[x + 3] == b'o'
-                        && text[x + 4] == b'r'
-                        && text[x + 5] == b't'
-                    {
-                        split_state = SplitState::Import;
-                    } else if x + 6 < text.len()
-                        && text[x + 0] == b'p'
-                        && text[x + 1] == b'a'
-                        && text[x + 2] == b'c'
-                        && text[x + 3] == b'k'
-                        && text[x + 4] == b'a'
-                        && text[x + 5] == b'g'
-                        && text[x + 6] == b'e'
-                    {
-                        split_state = SplitState::Import;
                     } else if text[x].is_ascii_whitespace() {
                         split_state = SplitState::Space;
                     } else if text[x] == b'"' {
@@ -186,49 +165,16 @@ impl JavaFormatter {
                         panic!("");
                     }
                 }
-                SplitState::Anotation => {
-                    last_type = WordType::Anotation;
-                    let mut deep: i64 = 0;
-                    let mut y: usize = 0;
-                    let mut is_string1: bool = false;
-                    let mut is_string2: bool = false;
-                    loop {
-                        if text[x + y].is_ascii_whitespace()
-                            && deep == 0
-                            && !is_string1
-                            && !is_string2
-                        {
-                            break;
-                        } else if text[x + y] == b'\\' && (is_string1 || is_string2) {
-                            word.push(text[x + y + 0]);
-                            word.push(text[x + y + 1]);
-                            y += 1;
-                        } else if text[x + y] == b'"' {
-                            word.push(text[x + y]);
-                            is_string1 = !is_string1;
-                        } else if text[x + y] == b'\'' {
-                            word.push(text[x + y]);
-                            is_string2 = !is_string1;
-                        } else if is_string1 || is_string2 {
-                            word.push(text[x + y]);
-                        } else if text[x + y] == b'(' || text[x + y] == b'{' {
-                            word.push(text[x + y]);
-                            deep += 1;
-                        } else if text[x + y] == b')' || text[x + y] == b'}' {
-                            word.push(text[x + y]);
-                            deep -= 1;
-                            if text[x + y] == b')' && deep == 0 {
-                                y += 1;
-                                break;
-                            }
-                        } else {
-                            word.push(text[x + y]);
-                        }
-                        y += 1;
+                SplitState::Macro => {
+                    last_type = WordType::Macro;
+                    if 1 <= x && text[x - 1] == b'\\' && text[x] == b'\n' {
+                        word.push(text[x]);
+                    } else if text[x] == b'\n' {
+                        split_state = SplitState::Neutral;
+                        x -= 1;
+                    } else {
+                        word.push(text[x]);
                     }
-                    split_state = SplitState::Neutral;
-                    x += y;
-                    x -= 1;
                 }
                 SplitState::Comment1 => {
                     last_type = WordType::Comment;
@@ -250,13 +196,13 @@ impl JavaFormatter {
                         word.push(text[x]);
                     }
                 }
-                SplitState::Import => {
-                    last_type = WordType::Import;
-                    if text[x] == b';' {
-                        split_state = SplitState::Neutral;
-                    }
-                    word.push(text[x]);
-                }
+                // SplitState::Import => {
+                //     last_type = WordType::Import;
+                //     if text[x] == b';' {
+                //         split_state = SplitState::Neutral;
+                //     }
+                //     word.push(text[x]);
+                // }
                 SplitState::Punctuation => {
                     last_type = WordType::Punctuation;
                     split_state = SplitState::Neutral;
@@ -546,9 +492,8 @@ impl JavaFormatter {
                 || WORDS[x] == ":"
                 || WORDS[x] == "{"
                 || WORDS[x] == "}"
-                || TYPES[x] == WordType::Anotation
+                || TYPES[x] == WordType::Macro
                 || TYPES[x] == WordType::Comment
-                || TYPES[x] == WordType::Import
             {
                 APPEND = 0;
             } else {
@@ -582,25 +527,25 @@ impl JavaFormatter {
                 false
             }
         };
-        JavaFormatter::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
-        JavaFormatter::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
+        CFormatter::buffer_roll_new(WORDS[0 + 1].clone(), TYPES[0 + 1].clone());
+        CFormatter::buffer_roll_new(WORDS[0 + 2].clone(), TYPES[0 + 2].clone());
         if x + 3 < WORDS.len() {
-            JavaFormatter::buffer_roll_new(WORDS[x + 3].clone(), TYPES[x + 3].clone());
+            CFormatter::buffer_roll_new(WORDS[x + 3].clone(), TYPES[x + 3].clone());
         } else {
-            JavaFormatter::buffer_roll_new(String::new(), WordType::Space);
+            CFormatter::buffer_roll_new(String::new(), WordType::Space);
         }
         while x < WORDS.len() {
             if x + 4 < WORDS.len() {
-                JavaFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
+                CFormatter::buffer_roll_new(WORDS[x + 4].clone(), TYPES[x + 4].clone());
             } else {
-                JavaFormatter::buffer_roll_new(String::new(), WordType::Space);
+                CFormatter::buffer_roll_new(String::new(), WordType::Space);
             }
             INDENT_TRIGGER_BEFORE(x);
             IS_START_TRIGGER_BEFORE(x);
             IS_NEEDED_SPACE_TRIGGER_BEFORE(x);
             APPEND_TRIGGER_BEFORE(x);
             if IsStart::Yes == IS_START {
-                JavaFormatter::append_indent(INDENT + APPEND);
+                CFormatter::append_indent(INDENT + APPEND);
             } else if IsNeededSpace::Yes == IS_NEEDED_SPACE {
                 TEXT.push(' ');
             };
@@ -611,7 +556,7 @@ impl JavaFormatter {
             IS_START_TRIGGER_AFTER(x);
             IS_NEEDED_SPACE_TRIGGER_AFTER(x);
             APPEND_TRIGGER_AFTER(x);
-            JavaFormatter::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
+            CFormatter::buffer_roll_old(WORDS[x].clone(), TYPES[x].clone());
             x += 1;
         }
         TEXT = TEXT.trim().to_string();

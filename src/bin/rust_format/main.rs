@@ -28,6 +28,7 @@ fn main() {
     let file: String = second.unwrap();
     let text: String = String::from_utf8(std::fs::read(&file).unwrap()).unwrap();
     let text: String = match tp.as_str() {
+        "--c" => rust_format::c::CFormatter::format(&text),
         "--html" => rust_format::html::HtmlFormatter::format(&text),
         "--java" => rust_format::java::JavaFormatter::format(&text),
         "--javascript" => rust_format::js::JavascriptFormatter::format(&text),

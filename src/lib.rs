@@ -6,6 +6,7 @@
 //
 // Use.
 
+pub mod c;
 pub mod html;
 pub mod java;
 pub mod js;

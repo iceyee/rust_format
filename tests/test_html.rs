@@ -67,6 +67,12 @@ var c == a < b
 
 </body></html>
 
+
+<pre 
+id=\"TEXT\" 
+class=\"py-3\" 
+style=\"font-size: 1em; line-height: 2em; white-space: pre-wrap;\">{{text}}</pre>
+
 ";
 
 #[test]

@@ -132,9 +132,11 @@ impl JavascriptFormatter {
                     } else if text[x] == b'/'
                         && (TYPES.len() == 0
                             || TYPES[TYPES.len() - 1] == WordType::Punctuation
+                                && WORDS[WORDS.len() - 1] != ")"
                             || TYPES.len() == 1
                             || TYPES[TYPES.len() - 2] == WordType::Punctuation
-                                && TYPES[TYPES.len() - 1] == WordType::Space)
+                                && TYPES[TYPES.len() - 1] == WordType::Space
+                                && WORDS[WORDS.len() - 2] != ")")
                     {
                         split_state = SplitState::RegularExpression;
                     } else if text[x].is_ascii_whitespace() {
@@ -255,13 +257,23 @@ impl JavascriptFormatter {
                     }
                     new_types.push(WordType::Space);
                 }
+            } else if x + 2 < WORDS.len()
+                && WORDS[x + 0] == "="
+                && WORDS[x + 1] == "="
+                && WORDS[x + 2] == "="
+            {
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 1] + &WORDS[x + 2]);
+                new_types.push(WordType::Punctuation);
+                x += 2;
             } else if x + 1 < WORDS.len()
                 && (WORDS[x + 0] == "&" && WORDS[x + 1] == "&"
                     || WORDS[x + 0] == "|" && WORDS[x + 1] == "|"
+                    || WORDS[x + 0] == "=" && WORDS[x + 1] == ">"
                     || WORDS[x + 0] == "+" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "-" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "*" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "/" && WORDS[x + 1] == "="
+                    || WORDS[x + 0] == "%" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "=" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "!" && WORDS[x + 1] == "="
                     || WORDS[x + 0] == "^" && WORDS[x + 1] == "="
@@ -274,7 +286,7 @@ impl JavascriptFormatter {
                     || WORDS[x + 0] == "<" && WORDS[x + 1] == "<"
                     || WORDS[x + 0] == ">" && WORDS[x + 1] == ">")
             {
-                new_words.push(WORDS[x + 0].clone() + WORDS[x + 1].as_str());
+                new_words.push(WORDS[x + 0].clone() + &WORDS[x + 1]);
                 new_types.push(WordType::Punctuation);
                 x += 1;
             } else {
@@ -331,16 +343,20 @@ impl JavascriptFormatter {
         IS_NEEDED_SPACE_TRIGGER_BEFORE = |x: usize| {
             if ["|", "&&", "||"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["\n", "\n\n", "(", ")", ".", ";"].contains(&WORDS[x].as_str()) {
+            } else if [
+                "\n", "\n\n", "(", ")", "[", "]", "}", ".", ";", "++", "--", ",",
+            ]
+            .contains(&WORDS[x].as_str())
+            {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else {
                 //
             }
         };
         IS_NEEDED_SPACE_TRIGGER_AFTER = |x: usize| {
-            if [")", "|", "&&", "||", ";"].contains(&WORDS[x].as_str()) {
+            if [")", "]", "|", "&&", "||", ";", "++", "--", ","].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::Yes;
-            } else if ["(", "{", "."].contains(&WORDS[x].as_str()) {
+            } else if ["(", "[", "{", ".", "!"].contains(&WORDS[x].as_str()) {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
             } else if TYPES[x] == WordType::RegularExpression {
                 IS_NEEDED_SPACE = IsNeededSpace::No;
