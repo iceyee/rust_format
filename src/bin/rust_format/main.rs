@@ -32,6 +32,7 @@ fn main() {
         "--html" => rust_format::html::HtmlFormatter::format(&text),
         "--java" => rust_format::java::JavaFormatter::format(&text),
         "--javascript" => rust_format::js::JavascriptFormatter::format(&text),
+        "--json" => rust_format::json::JsonFormatter::format(&text),
         "--shell" => rust_format::shell::ShellFormatter::format(&text),
         "--vim" => rust_format::vim::VimFormatter::format(&text),
         "--xml" => rust_format::xml::XmlFormatter::format(&text),

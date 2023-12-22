@@ -10,6 +10,7 @@ pub mod c;
 pub mod html;
 pub mod java;
 pub mod js;
+pub mod json;
 pub mod shell;
 pub mod template;
 pub mod vim;
