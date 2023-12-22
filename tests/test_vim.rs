@@ -338,6 +338,10 @@ catch
 123
 endtry
 
+while 111
+       \" do something
+endwhile
+
 ";
 
 #[test]
