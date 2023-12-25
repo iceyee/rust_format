@@ -342,6 +342,8 @@ while 111
        \" do something
 endwhile
 
+let a ==# b
+
 ";
 
 #[test]

@@ -305,6 +305,10 @@ impl VimFormatter {
                     && WORDS[x] == "!"
                     && WORDS[x + 1] == "~"
                     && WORDS[x + 2] == "?"
+                || x + 2 < WORDS.len()
+                    && WORDS[x] == "="
+                    && WORDS[x + 1] == "="
+                    && WORDS[x + 2] == "#"
             {
                 new_words.push(WORDS[x].clone() + WORDS[x + 1].as_str() + WORDS[x + 2].as_str());
                 new_types.push(TYPES[x].clone());
